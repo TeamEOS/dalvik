@@ -938,7 +938,7 @@ static bool genArithOpInt(CompilationUnit *cUnit, MIR *mir,
     return false;
 }
 
-static bool genArithOp(CompilationUnit *cUnit, MIR *mir)
+static bool genArithOp(CompilationUnit *cUnit, MIR *mir, BasicBlock *bb)
 {
     Opcode opcode = mir->dalvikInsn.opcode;
     RegLocation rlDest;
@@ -988,10 +988,10 @@ static bool genArithOp(CompilationUnit *cUnit, MIR *mir)
         return genArithOpFloat(cUnit, mir, rlDest, rlSrc1, rlSrc2);
     }
     if ((opcode >= OP_ADD_DOUBLE_2ADDR) && (opcode <= OP_REM_DOUBLE_2ADDR)) {
-        return genArithOpDouble(cUnit,mir, rlDest, rlSrc1, rlSrc2);
+        return genArithOpDouble(cUnit,mir, rlDest, rlSrc1, rlSrc2, bb);
     }
     if ((opcode >= OP_ADD_DOUBLE) && (opcode <= OP_REM_DOUBLE)) {
-        return genArithOpDouble(cUnit,mir, rlDest, rlSrc1, rlSrc2);
+        return genArithOpDouble(cUnit,mir, rlDest, rlSrc1, rlSrc2, bb);
     }
     return true;
 }
@@ -2033,7 +2033,7 @@ static bool handleFmt11x(CompilationUnit *cUnit, MIR *mir)
     return false;
 }
 
-static bool handleFmt12x(CompilationUnit *cUnit, MIR *mir)
+static bool handleFmt12x(CompilationUnit *cUnit, MIR *mir, BasicBlock* bb)
 {
     Opcode opcode = mir->dalvikInsn.opcode;
     RegLocation rlDest;
@@ -2041,7 +2041,7 @@ static bool handleFmt12x(CompilationUnit *cUnit, MIR *mir)
     RegLocation rlResult;
 
     if ( (opcode >= OP_ADD_INT_2ADDR) && (opcode <= OP_REM_DOUBLE_2ADDR)) {
-        return genArithOp( cUnit, mir );
+        return genArithOp( cUnit, mir, bb);
     }
 
     if (mir->ssaRep->numUses == 2)
@@ -2074,7 +2074,7 @@ static bool handleFmt12x(CompilationUnit *cUnit, MIR *mir)
         case OP_NEG_FLOAT:
             return genArithOpFloat(cUnit, mir, rlDest, rlSrc, rlSrc);
         case OP_NEG_DOUBLE:
-            return genArithOpDouble(cUnit, mir, rlDest, rlSrc, rlSrc);
+            return genArithOpDouble(cUnit, mir, rlDest, rlSrc, rlSrc, bb);
         case OP_MOVE_WIDE:
             storeValueWide(cUnit, rlDest, rlSrc);
             break;
@@ -2735,8 +2735,7 @@ __attribute__((weak)) bool isInvalidMIR(CompilationUnit *cUnit, MIR *mir)
     return result;
 }
 
-
-static bool handleFmt23x(CompilationUnit *cUnit, MIR *mir)
+static bool handleFmt23x(CompilationUnit *cUnit, MIR *mir, BasicBlock *bb)
 {
     Opcode opcode = mir->dalvikInsn.opcode;
     RegLocation rlSrc1;
@@ -2744,7 +2743,7 @@ static bool handleFmt23x(CompilationUnit *cUnit, MIR *mir)
     RegLocation rlDest;
 
     if ( (opcode >= OP_ADD_INT) && (opcode <= OP_REM_DOUBLE)) {
-        return genArithOp( cUnit, mir );
+        return genArithOp( cUnit, mir, bb);
     }
 
     /* APUTs have 3 sources and no targets */
@@ -4289,6 +4288,7 @@ static void handleExtendedMIR(CompilationUnit *cUnit, MIR *mir)
     }
 }
 
+
 /*
  * Create a PC-reconstruction cell for the starting offset of this trace.
  * Since the PCR cell is placed near the end of the compiled code which is
@@ -4611,7 +4611,7 @@ void dvmCompilerMIR2LIR(CompilationUnit *cUnit)
                             notHandled = handleFmt11x(cUnit, mir);
                             break;
                         case kFmt12x:
-                            notHandled = handleFmt12x(cUnit, mir);
+                            notHandled = handleFmt12x(cUnit, mir, bb);
                             break;
                         case kFmt20bc:
                             notHandled = handleFmt20bc(cUnit, mir);
@@ -4649,7 +4649,7 @@ void dvmCompilerMIR2LIR(CompilationUnit *cUnit)
                             notHandled = handleFmt22x_Fmt32x(cUnit, mir);
                             break;
                         case kFmt23x:
-                            notHandled = handleFmt23x(cUnit, mir);
+                            notHandled = handleFmt23x(cUnit, mir, bb);
                             break;
                         case kFmt31t:
                             notHandled = handleFmt31t(cUnit, mir);
